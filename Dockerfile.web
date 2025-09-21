@@ -1,0 +1,23 @@
+# Build stage
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Install dependencies using the workspace-aware lockfile
+COPY package.json package-lock.json ./
+COPY web/package.json web/package.json
+
+RUN npm ci
+
+# Copy the rest of the workspace and build the web app
+COPY . .
+RUN npm run build --workspace web
+
+# Runtime stage
+FROM nginx:alpine AS runtime
+
+COPY --from=build /app/web/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

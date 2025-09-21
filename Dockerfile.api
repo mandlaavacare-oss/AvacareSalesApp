@@ -1,0 +1,29 @@
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+WORKDIR /src
+
+# copy solution and project files for restore
+COPY AvacareSalesApp.sln ./
+COPY src/Server/Server.csproj src/Server/
+
+RUN dotnet restore src/Server/Server.csproj
+
+# copy the remaining source
+COPY . .
+
+# publish the API to the /app/publish folder
+RUN dotnet publish src/Server/Server.csproj -c Release -o /app/publish /p:UseAppHost=false
+
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+
+WORKDIR /app
+
+# configure the ASP.NET Core URL binding and port exposure
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+COPY --from=build /app/publish ./
+
+ENTRYPOINT ["dotnet", "Server.dll"]
