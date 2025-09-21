@@ -46,4 +46,29 @@ public class AuthController : ControllerBase
             return Problem("An unexpected error occurred while logging in.");
         }
     }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
+    {
+        _databaseContext.BeginTran();
+
+        try
+        {
+            await _authService.RegisterAsync(request, cancellationToken);
+            _databaseContext.CommitTran();
+            return CreatedAtAction(nameof(Register), new { username = request.Username }, null);
+        }
+        catch (DomainException ex)
+        {
+            _databaseContext.RollbackTran();
+            _logger.LogWarning(ex, "Failed registration attempt for {Username}", request.Username);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _databaseContext.RollbackTran();
+            _logger.LogError(ex, "Unhandled error during registration for {Username}", request.Username);
+            return Problem("An unexpected error occurred while registering.");
+        }
+    }
 }

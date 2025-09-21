@@ -1,4 +1,8 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Server.Infrastructure.Authentication.Adapters;
+using Server.Infrastructure.Authentication.Database;
+using Server.Infrastructure.Authentication.Models;
 using Server.Infrastructure.Authentication.Services;
 using Server.Infrastructure.Database;
 using Server.Transactions.AccountsReceivable.Adapters;
@@ -13,6 +17,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=app.db";
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(connectionString));
+
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.User.RequireUniqueEmail = false;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddDataProtection();
+builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddScoped<IDatabaseContext, DatabaseContext>();
 

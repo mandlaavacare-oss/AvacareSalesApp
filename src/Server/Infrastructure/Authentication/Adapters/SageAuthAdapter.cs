@@ -4,7 +4,7 @@ namespace Server.Infrastructure.Authentication.Adapters;
 
 public class SageAuthAdapter : IAuthAdapter
 {
-    public Task<LoginResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
+    public Task<LoginResult> LoginAsync(LoginRequest request, string sageCustomerCode, CancellationToken cancellationToken)
     {
         throw new NotImplementedException("Integrate with Sage SDK authentication.");
     }

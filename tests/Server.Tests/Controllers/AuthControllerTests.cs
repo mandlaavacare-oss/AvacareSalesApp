@@ -19,7 +19,7 @@ public class AuthControllerTests
         var database = new Mock<IDatabaseContext>();
         var logger = Mock.Of<ILogger<AuthController>>();
         var request = new LoginRequest("user", "password");
-        var expected = new LoginResult("user", "token");
+        var expected = new LoginResult("user", "token", "CUST-001");
         service.Setup(s => s.LoginAsync(request, It.IsAny<CancellationToken>())).ReturnsAsync(expected);
 
         var controller = new AuthController(service.Object, database.Object, logger);
@@ -53,5 +53,45 @@ public class AuthControllerTests
         database.Verify(d => d.RollbackTran(), Times.Once);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task Register_WhenSuccessful_CommitsTransaction()
+    {
+        var service = new Mock<IAuthService>();
+        var database = new Mock<IDatabaseContext>();
+        var logger = Mock.Of<ILogger<AuthController>>();
+        var request = new RegisterRequest("user", "password", "CUST-001");
+
+        var controller = new AuthController(service.Object, database.Object, logger);
+
+        var result = await controller.Register(request, CancellationToken.None);
+
+        database.Verify(d => d.BeginTran(), Times.Once);
+        database.Verify(d => d.CommitTran(), Times.Once);
+        database.Verify(d => d.RollbackTran(), Times.Never);
+
+        result.Should().BeOfType<CreatedAtActionResult>();
+    }
+
+    [Fact]
+    public async Task Register_WhenDomainException_RollsBackAndReturnsBadRequest()
+    {
+        var service = new Mock<IAuthService>();
+        var database = new Mock<IDatabaseContext>();
+        var logger = Mock.Of<ILogger<AuthController>>();
+        var request = new RegisterRequest("user", "password", "CUST-001");
+        service.Setup(s => s.RegisterAsync(request, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DomainException("failed"));
+
+        var controller = new AuthController(service.Object, database.Object, logger);
+
+        var result = await controller.Register(request, CancellationToken.None);
+
+        database.Verify(d => d.BeginTran(), Times.Once);
+        database.Verify(d => d.CommitTran(), Times.Never);
+        database.Verify(d => d.RollbackTran(), Times.Once);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 }

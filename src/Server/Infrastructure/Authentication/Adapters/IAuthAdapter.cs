@@ -4,5 +4,5 @@ namespace Server.Infrastructure.Authentication.Adapters;
 
 public interface IAuthAdapter
 {
-    Task<LoginResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
+    Task<LoginResult> LoginAsync(LoginRequest request, string sageCustomerCode, CancellationToken cancellationToken);
 }

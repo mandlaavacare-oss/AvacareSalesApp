@@ -1,3 +1,3 @@
 namespace Server.Infrastructure.Authentication.Models;
 
-public record LoginResult(string Username, string Token);
+public record LoginResult(string Username, string Token, string SageCustomerCode);
