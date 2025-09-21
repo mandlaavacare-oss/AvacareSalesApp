@@ -1,0 +1,11 @@
+{
+  "name": "avacare-sales-app",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "build": "npm --workspace web run build"
+  }
+}
