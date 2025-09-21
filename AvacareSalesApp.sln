@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{743DB61B-0F70-44BD-A30B-FF1F45E00310}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvacareSalesApp", "src\Server\AvacareSalesApp.csproj", "{75A393C8-97D4-4243-BEF4-CD487BF6E7DE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{759AF559-C825-4001-BDD3-E0C111D48F77}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvacareSalesApp.Tests", "tests\Server\AvacareSalesApp.Tests.csproj", "{55378CBC-37F7-4784-9999-BE542C7B4F9D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{75A393C8-97D4-4243-BEF4-CD487BF6E7DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75A393C8-97D4-4243-BEF4-CD487BF6E7DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75A393C8-97D4-4243-BEF4-CD487BF6E7DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75A393C8-97D4-4243-BEF4-CD487BF6E7DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55378CBC-37F7-4784-9999-BE542C7B4F9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55378CBC-37F7-4784-9999-BE542C7B4F9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55378CBC-37F7-4784-9999-BE542C7B4F9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55378CBC-37F7-4784-9999-BE542C7B4F9D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{75A393C8-97D4-4243-BEF4-CD487BF6E7DE} = {743DB61B-0F70-44BD-A30B-FF1F45E00310}
+		{55378CBC-37F7-4784-9999-BE542C7B4F9D} = {759AF559-C825-4001-BDD3-E0C111D48F77}
+	EndGlobalSection
+EndGlobal
