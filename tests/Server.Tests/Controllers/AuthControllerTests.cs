@@ -16,13 +16,14 @@ public class AuthControllerTests
     public async Task Login_WhenSuccessful_CommitsTransaction()
     {
         var service = new Mock<IAuthService>();
+        var onboarding = new Mock<IUserOnboardingService>();
         var database = new Mock<IDatabaseContext>();
         var logger = Mock.Of<ILogger<AuthController>>();
         var request = new LoginRequest("user", "password");
-        var expected = new LoginResult("user", "token");
+        var expected = new LoginResult("user", "token", "CUST001");
         service.Setup(s => s.LoginAsync(request, It.IsAny<CancellationToken>())).ReturnsAsync(expected);
 
-        var controller = new AuthController(service.Object, database.Object, logger);
+        var controller = new AuthController(service.Object, onboarding.Object, database.Object, logger);
 
         var result = await controller.Login(request, CancellationToken.None);
 
@@ -38,13 +39,14 @@ public class AuthControllerTests
     public async Task Login_WhenDomainException_RollsBackAndReturnsUnauthorized()
     {
         var service = new Mock<IAuthService>();
+        var onboarding = new Mock<IUserOnboardingService>();
         var database = new Mock<IDatabaseContext>();
         var logger = Mock.Of<ILogger<AuthController>>();
         var request = new LoginRequest("user", "password");
         service.Setup(s => s.LoginAsync(request, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DomainException("failed"));
 
-        var controller = new AuthController(service.Object, database.Object, logger);
+        var controller = new AuthController(service.Object, onboarding.Object, database.Object, logger);
 
         var result = await controller.Login(request, CancellationToken.None);
 
@@ -53,5 +55,51 @@ public class AuthControllerTests
         database.Verify(d => d.RollbackTran(), Times.Once);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task Register_WhenSuccessful_CommitsTransaction()
+    {
+        var authService = new Mock<IAuthService>();
+        var onboarding = new Mock<IUserOnboardingService>();
+        var database = new Mock<IDatabaseContext>();
+        var logger = Mock.Of<ILogger<AuthController>>();
+        var request = new RegisterRequest("user", "password", "CUST001");
+        var expected = new RegistrationResult("id", "user", "CUST001");
+        onboarding.Setup(s => s.RegisterAsync(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        var controller = new AuthController(authService.Object, onboarding.Object, database.Object, logger);
+
+        var result = await controller.Register(request, CancellationToken.None);
+
+        database.Verify(d => d.BeginTran(), Times.Once);
+        database.Verify(d => d.CommitTran(), Times.Once);
+        database.Verify(d => d.RollbackTran(), Times.Never);
+
+        result.Should().BeOfType<OkObjectResult>()
+            .Which.Value.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public async Task Register_WhenDomainException_RollsBackAndReturnsBadRequest()
+    {
+        var authService = new Mock<IAuthService>();
+        var onboarding = new Mock<IUserOnboardingService>();
+        var database = new Mock<IDatabaseContext>();
+        var logger = Mock.Of<ILogger<AuthController>>();
+        var request = new RegisterRequest("user", "password", "CUST001");
+        onboarding.Setup(s => s.RegisterAsync(request, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DomainException("failed"));
+
+        var controller = new AuthController(authService.Object, onboarding.Object, database.Object, logger);
+
+        var result = await controller.Register(request, CancellationToken.None);
+
+        database.Verify(d => d.BeginTran(), Times.Once);
+        database.Verify(d => d.CommitTran(), Times.Never);
+        database.Verify(d => d.RollbackTran(), Times.Once);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 }

@@ -1,4 +1,8 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Server.Infrastructure.Authentication;
 using Server.Infrastructure.Authentication.Adapters;
+using Server.Infrastructure.Authentication.Models;
 using Server.Infrastructure.Authentication.Services;
 using Server.Infrastructure.Database;
 using Server.Transactions.AccountsReceivable.Adapters;
@@ -14,10 +18,23 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=avacare.db";
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(connectionString));
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+    {
+        options.User.RequireUniqueEmail = false;
+    })
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
 builder.Services.AddScoped<IDatabaseContext, DatabaseContext>();
 
 builder.Services.AddScoped<IAuthAdapter, SageAuthAdapter>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserOnboardingService, UserOnboardingService>();
 
 builder.Services.AddScoped<ICustomerAdapter, SageCustomerAdapter>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
