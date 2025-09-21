@@ -1,9 +1,11 @@
+using System.Linq;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Server.Infrastructure.Authentication.Adapters;
 using Server.Infrastructure.Authentication.Database;
 using Server.Infrastructure.Authentication.Models;
 using Server.Infrastructure.Authentication.Services;
+using Server.Infrastructure.BranchContext;
 using Server.Infrastructure.Database;
 using Server.Transactions.AccountsReceivable.Adapters;
 using Server.Transactions.AccountsReceivable.Services;
@@ -28,6 +30,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IDatabaseContext, DatabaseContext>();
+builder.Services.AddScoped<IBranchContextLoader, BranchContextLoader>();
 
 builder.Services.AddScoped<IAuthAdapter, SageAuthAdapter>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -59,6 +62,17 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Load the branch configuration from config/branches.json and call DatabaseContext.SetBranchContext(branchId)
+// so that every request executes against the correct Sage branch database.
+app.Use(async (context, next) =>
+{
+    var branchContextLoader = context.RequestServices.GetRequiredService<IBranchContextLoader>();
+    var branchCode = context.Request.Headers["X-Branch-Code"].FirstOrDefault();
+    branchContextLoader.ApplyBranchContext(branchCode);
+
+    await next();
+});
 
 app.MapControllers();
 

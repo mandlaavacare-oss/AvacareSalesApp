@@ -6,6 +6,7 @@ public class DatabaseContext : IDatabaseContext
 {
     private readonly ILogger<DatabaseContext> _logger;
     private bool _transactionStarted;
+    private int? _branchId;
 
     public DatabaseContext(ILogger<DatabaseContext> logger)
     {
@@ -46,5 +47,17 @@ public class DatabaseContext : IDatabaseContext
 
         _logger.LogDebug("Rolling back database transaction.");
         _transactionStarted = false;
+    }
+
+    public void SetBranchContext(int branchId)
+    {
+        if (_branchId == branchId)
+        {
+            _logger.LogDebug("Branch context already set to {BranchId}.", branchId);
+            return;
+        }
+
+        _branchId = branchId;
+        _logger.LogInformation("Branch context switched to {BranchId}.", branchId);
     }
 }

@@ -7,4 +7,6 @@ public interface IDatabaseContext
     void CommitTran();
 
     void RollbackTran();
+
+    void SetBranchContext(int branchId);
 }

@@ -1,0 +1,15 @@
+{
+  "defaultBranchCode": "HQ",
+  "branches": [
+    {
+      "code": "HQ",
+      "name": "Head Office",
+      "id": 1
+    },
+    {
+      "code": "CT",
+      "name": "Cape Town Warehouse",
+      "id": 2
+    }
+  ]
+}

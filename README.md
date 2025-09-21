@@ -64,6 +64,8 @@ dotnet test
 
 Runtime integration with the Sage SDK requires concrete adapter implementations. The default `Sage*Adapter` classes are placeholders that must be completed with real SDK calls and configuration (e.g., connection strings, credentials) before production deployment.
 
+- `config/branches.json` at the repository root describes the Sage branch metadata (branch code, name, and numeric identifier). On every request the middleware registered in `Program.cs` uses `BranchContextLoader` to read this file and invoke `DatabaseContext.SetBranchContext(branchId)` so downstream services operate on the correct branch database.
+
 ## Container deployment notes
 
 - **API container** – publishes the ASP.NET Core API to `/app/publish` and listens on port `8080`. When deploying to Azure App Service for Containers, set `WEBSITES_PORT=8080` (or the equivalent configuration variable) so the platform forwards traffic correctly.
