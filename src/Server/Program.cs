@@ -1,4 +1,8 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Server.Infrastructure.Authentication.Adapters;
+using Server.Infrastructure.Authentication.Database;
+using Server.Infrastructure.Authentication.Models;
 using Server.Infrastructure.Authentication.Services;
 using Server.Infrastructure.Database;
 using Server.Transactions.AccountsReceivable.Adapters;
@@ -13,6 +17,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IDatabaseContext, DatabaseContext>();
 
@@ -43,6 +56,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
