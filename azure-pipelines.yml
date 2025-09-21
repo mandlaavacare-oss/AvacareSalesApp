@@ -1,0 +1,127 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  acrLoginServer: 'avacaresales.azurecr.io'
+  backendRepository: 'avacare-sales-api'
+  frontendRepository: 'avacare-sales-web'
+  apiWebAppName: 'avacare-sales-api-app'
+  webAppName: 'avacare-sales-web-app'
+
+stages:
+  - stage: Build
+    displayName: Build and Test
+    jobs:
+      - job: Backend
+        displayName: Restore, build, and test the API
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+
+          - task: UseDotNet@2
+            displayName: Install .NET SDK 8.x
+            inputs:
+              packageType: 'sdk'
+              version: '8.0.x'
+
+          - script: dotnet restore AvacareSalesApp.sln
+            displayName: Restore backend dependencies
+
+          - script: dotnet build AvacareSalesApp.sln --configuration Release --no-restore
+            displayName: Build backend
+
+          - script: |
+              dotnet test tests/Server.Tests/Server.Tests.csproj \
+                --configuration Release \
+                --no-build \
+                --logger trx \
+                --results-directory $(Agent.TempDirectory)/test-results
+            displayName: Run backend tests
+
+          - task: PublishTestResults@2
+            displayName: Publish backend test results
+            inputs:
+              testResultsFormat: VSTest
+              testResultsFiles: '$(Agent.TempDirectory)/test-results/*.trx'
+              failTaskOnFailedTests: true
+
+      - job: Frontend
+        displayName: Lint and build the frontend
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+
+          - task: NodeTool@0
+            displayName: Install Node.js 20.x
+            inputs:
+              versionSpec: '20.x'
+
+          - script: npm ci
+            displayName: Install npm dependencies
+
+          - script: npm --workspace web run lint
+            displayName: Lint frontend source
+
+          - script: npm --workspace web run build
+            displayName: Build frontend
+
+  - stage: Deploy
+    displayName: Build Images and Deploy to App Services
+    dependsOn: Build
+    condition: succeeded('Build')
+    jobs:
+      - job: DeployContainers
+        displayName: Build images, push to ACR, and deploy to App Services
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+
+          - task: Docker@2
+            displayName: Build and push backend image
+            inputs:
+              containerRegistry: 'acr-service-connection'
+              repository: '$(backendRepository)'
+              command: 'buildAndPush'
+              Dockerfile: 'src/Server/Dockerfile'
+              buildContext: 'src/Server'
+              tags: |
+                $(Build.BuildNumber)
+                latest
+
+          - task: Docker@2
+            displayName: Build and push frontend image
+            inputs:
+              containerRegistry: 'acr-service-connection'
+              repository: '$(frontendRepository)'
+              command: 'buildAndPush'
+              Dockerfile: 'web/Dockerfile'
+              buildContext: 'web'
+              tags: |
+                $(Build.BuildNumber)
+                latest
+
+          - task: AzureWebApp@1
+            displayName: Deploy backend container to App Service
+            inputs:
+              azureSubscription: 'azure-subscription-connection'
+              appName: '$(apiWebAppName)'
+              appType: 'webAppLinux'
+              imageName: '$(acrLoginServer)/$(backendRepository):$(Build.BuildNumber)'
+
+          - task: AzureWebApp@1
+            displayName: Deploy frontend container to App Service
+            inputs:
+              azureSubscription: 'azure-subscription-connection'
+              appName: '$(webAppName)'
+              appType: 'webAppLinux'
+              imageName: '$(acrLoginServer)/$(frontendRepository):$(Build.BuildNumber)'
