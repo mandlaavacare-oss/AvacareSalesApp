@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Server.Common.Exceptions;
@@ -9,6 +10,7 @@ namespace Server.Controllers;
 
 [ApiController]
 [Route("orders")]
+[Authorize(Policy = "RequireAdmin")]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;

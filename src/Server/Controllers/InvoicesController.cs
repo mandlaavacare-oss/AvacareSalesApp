@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Server.Common.Exceptions;
@@ -9,6 +10,7 @@ namespace Server.Controllers;
 
 [ApiController]
 [Route("invoices")]
+[Authorize(Policy = "RequireAdmin")]
 public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;

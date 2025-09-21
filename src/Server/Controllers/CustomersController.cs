@@ -1,7 +1,10 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Server.Common.Exceptions;
 using Server.Infrastructure.Database;
+using Server.Infrastructure.Authentication.Models;
 using Server.Transactions.AccountsReceivable.Models;
 using Server.Transactions.AccountsReceivable.Services;
 
@@ -9,6 +12,7 @@ namespace Server.Controllers;
 
 [ApiController]
 [Route("customers")]
+[Authorize(Policy = "RequireAdminOrCustomer")]
 public class CustomersController : ControllerBase
 {
     private readonly ICustomerService _customerService;
@@ -29,6 +33,17 @@ public class CustomersController : ControllerBase
 
         try
         {
+            if (User.IsInRole(RoleNames.Customer))
+            {
+                var customerId = User.FindFirstValue(CustomClaimTypes.CustomerId);
+                if (!string.Equals(customerId, id, StringComparison.OrdinalIgnoreCase))
+                {
+                    _databaseContext.RollbackTran();
+                    _logger.LogWarning("User {User} attempted to access customer {CustomerId}", User.Identity?.Name, id);
+                    return Forbid();
+                }
+            }
+
             var customer = await _customerService.GetCustomerAsync(id, cancellationToken);
             _databaseContext.CommitTran();
             return Ok(customer);
