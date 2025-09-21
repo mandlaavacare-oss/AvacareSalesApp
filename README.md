@@ -14,6 +14,7 @@ Run `npm install` followed by `npm run build` from the repository root to compil
 
 ## Documentation
 - [Sage Evolution SDK (C# Transactions) Technical User Guide](docs/transactions/sage-evolution-sdk-transactions.md)
+- [Deployment guide](docs/deployment.md)
 
 ## Backend server
 
