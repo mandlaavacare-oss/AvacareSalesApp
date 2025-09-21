@@ -1,8 +1,8 @@
-using Server.Transactions.Inventory.Models;
+using Server.Infrastructure.InventoryCache;
 
 namespace Server.Transactions.Inventory.Adapters;
 
 public interface IProductAdapter
 {
-    Task<IReadOnlyCollection<Product>> GetProductsAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<CacheInventoryItem>> GetProductsAsync(CancellationToken cancellationToken);
 }

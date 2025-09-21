@@ -1,6 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using Server.Infrastructure.Authentication.Adapters;
 using Server.Infrastructure.Authentication.Services;
 using Server.Infrastructure.Database;
+using Server.Infrastructure.BackgroundJobs;
+using Server.Infrastructure.InventoryCache;
 using Server.Transactions.AccountsReceivable.Adapters;
 using Server.Transactions.AccountsReceivable.Services;
 using Server.Transactions.Inventory.Adapters;
@@ -16,6 +19,26 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IDatabaseContext, DatabaseContext>();
 
+builder.Services.Configure<InventoryCacheOptions>(builder.Configuration.GetSection(InventoryCacheOptions.SectionName));
+
+builder.Services.AddSingleton(TimeProvider.System);
+
+builder.Services.AddDbContext<CacheInventoryDbContext>(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("InventoryCache");
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        options.UseSqlServer(connectionString);
+    }
+    else
+    {
+        options.UseInMemoryDatabase("InventoryCache");
+    }
+});
+
+builder.Services.AddScoped<ICacheInventoryRepository, CacheInventoryRepository>();
+builder.Services.AddScoped<IInventoryCacheRefresher, InventoryCacheRefresher>();
+
 builder.Services.AddScoped<IAuthAdapter, SageAuthAdapter>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
@@ -28,11 +51,14 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentAdapter, SagePaymentAdapter>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
+builder.Services.AddScoped<ISageInventoryClient, SageInventoryClient>();
 builder.Services.AddScoped<IProductAdapter, SageProductAdapter>();
 builder.Services.AddScoped<IProductService, ProductService>();
 
 builder.Services.AddScoped<IOrderEntryAdapter, SageOrderEntryAdapter>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+
+builder.Services.AddHostedService<NightlyInventorySyncService>();
 
 var app = builder.Build();
 
