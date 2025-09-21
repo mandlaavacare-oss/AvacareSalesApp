@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Server.Infrastructure.Authentication.Adapters;
 using Server.Infrastructure.Authentication.Services;
 using Server.Infrastructure.Database;
@@ -14,7 +15,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped<IDatabaseContext, DatabaseContext>();
+builder.Services.AddDbContext<DatabaseContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IDatabaseContext>(sp => sp.GetRequiredService<DatabaseContext>());
 
 builder.Services.AddScoped<IAuthAdapter, SageAuthAdapter>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -35,6 +39,12 @@ builder.Services.AddScoped<IOrderEntryAdapter, SageOrderEntryAdapter>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+    context.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {
