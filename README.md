@@ -64,6 +64,70 @@ dotnet test
 
 Runtime integration with the Sage SDK requires concrete adapter implementations. The default `Sage*Adapter` classes are placeholders that must be completed with real SDK calls and configuration (e.g., connection strings, credentials) before production deployment.
 
+#### Branch configuration file
+
+Online branch accounting requires the API to know which Sage branch should back each request. Place a `branchConfiguration.json` file in the content root (next to `appsettings.json`) and add it to the configuration pipeline (for example with `builder.Configuration.AddJsonFile("branchConfiguration.json", optional: false, reloadOnChange: true)`) so edits are picked up without restarting the site. A minimal example looks like this:
+
+```json
+{
+  "branches": [
+    {
+      "code": "JHB",
+      "pastelBranchId": 1,
+      "description": "Johannesburg head office"
+    },
+    {
+      "code": "CPT",
+      "pastelBranchId": 4,
+      "description": "Cape Town warehouse"
+    }
+  ]
+}
+```
+
+At runtime the controller (or middleware) resolves the branch code supplied by the caller, locates the matching entry in the configuration, and then executes the Sage SDK call sequence before touching transactional data:
+
+```csharp
+var branch = _branchResolver.Resolve("JHB");
+DatabaseContext.SetBranchContext(branch.PastelBranchId);
+DatabaseContext.BeginTran();
+// Invoke the appropriate adapter/service logic
+DatabaseContext.CommitTran();
+```
+
+When an error occurs after the branch context is set, the surrounding transaction wrapper should call `DatabaseContext.RollbackTran()` instead of `CommitTran()`.
+
+#### Supplying secrets via environment variables or user secrets
+
+The application uses standard ASP.NET Core configuration precedence. Values in `appsettings.json` and `appsettings.{Environment}.json` are considered defaults; environment variables and the development user secrets store take priority and should be used for sensitive data. Use the following key shapes—`ConnectionStrings:Default` is read today, and the Sage entries illustrate how additional secrets should be named once the SDK adapters are implemented:
+
+| Purpose | Configuration key | Environment variable form |
+| --- | --- | --- |
+| SQL connection string | `ConnectionStrings:Default` | `ConnectionStrings__Default` |
+| Sage agent username | `Sage:Agent` | `Sage__Agent` |
+| Sage agent password | `Sage:Password` | `Sage__Password` |
+| Optional API keys (per adapter) | `Sage:ApiKeys:<Name>` | `Sage__ApiKeys__<Name>` |
+
+For local development, initialise user secrets once with `dotnet user-secrets init` from the `src/Server` directory and then set values, for example:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:Default" "Server=.;Database=AvacareSalesApp;User Id=..."
+dotnet user-secrets set "Sage:Agent" "integration.bot"
+dotnet user-secrets set "Sage:Password" "<strong password>"
+```
+
+When the site starts it loads values in the following order (later entries override earlier ones): `appsettings.json` → `appsettings.{Environment}.json` → user secrets (only in Development) → environment variables. This allows you to keep non-sensitive defaults in source control while providing production credentials through secure stores.
+
+#### Deployment-time configuration and secret management
+
+All configuration files (`appsettings*.json` and `branchConfiguration.json`) are watched for changes and automatically reloaded, but deployment environments typically handle secrets differently:
+
+- **IIS / Windows Hosting** – use `web.config` transforms to point at production-only JSON files or to set environment variables (e.g., `ConnectionStrings__Default`) during the publish step.
+- **Azure App Service** – set application settings for each key (including `ConnectionStrings__Default`, `Sage__Agent`, etc.). App Service injects them as environment variables and restarts the worker to apply updates; no code changes are required.
+- **Containers / Kubernetes** – project secrets as environment variables using Docker `-e` flags, Kubernetes `Secret` resources, or Azure Key Vault references. Mount `branchConfiguration.json` through a ConfigMap or bind mount when branch mappings need to change without redeployment.
+
+Remember to update DevOps pipelines or infrastructure-as-code definitions whenever new keys are introduced so that sensitive values remain outside the repository.
+
 ## Container deployment notes
 
 - **API container** – publishes the ASP.NET Core API to `/app/publish` and listens on port `8080`. When deploying to Azure App Service for Containers, set `WEBSITES_PORT=8080` (or the equivalent configuration variable) so the platform forwards traffic correctly.
