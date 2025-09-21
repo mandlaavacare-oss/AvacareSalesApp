@@ -1,7 +1,10 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Server.Common.Exceptions;
 using Server.Infrastructure.Database;
+using Server.Infrastructure.Authentication;
 using Server.Transactions.AccountsReceivable.Models;
 using Server.Transactions.AccountsReceivable.Services;
 
@@ -22,9 +25,19 @@ public class CustomersController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = RoleNames.Admin + "," + RoleNames.Customer)]
     [HttpGet("{id}")]
     public async Task<ActionResult<Customer>> GetCustomer(string id, CancellationToken cancellationToken)
     {
+        if (User.IsInRole(RoleNames.Customer))
+        {
+            var customerId = User.FindFirstValue(IdentityClaimTypes.CustomerId);
+            if (!string.Equals(customerId, id, StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+        }
+
         _databaseContext.BeginTran();
 
         try

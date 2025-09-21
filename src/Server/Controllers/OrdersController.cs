@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Server.Common.Exceptions;
 using Server.Infrastructure.Database;
+using Server.Infrastructure.Authentication;
 using Server.Transactions.OrderEntry.Models;
 using Server.Transactions.OrderEntry.Services;
 
@@ -22,6 +24,7 @@ public class OrdersController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Policy = PolicyNames.RequireAdmin)]
     [HttpPost]
     public async Task<ActionResult<SalesOrder>> CreateOrder([FromBody] CreateOrderRequest request, CancellationToken cancellationToken)
     {

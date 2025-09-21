@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Server.Common.Exceptions;
 using Server.Infrastructure.Database;
+using Server.Infrastructure.Authentication;
 using Server.Transactions.Inventory.Models;
 using Server.Transactions.Inventory.Services;
 
@@ -22,6 +24,7 @@ public class ProductsController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = RoleNames.Admin + "," + RoleNames.Customer)]
     [HttpGet]
     public async Task<ActionResult<IReadOnlyCollection<Product>>> GetProducts(CancellationToken cancellationToken)
     {

@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Server.Common.Exceptions;
 using Server.Infrastructure.Database;
+using Server.Infrastructure.Authentication;
 using Server.Transactions.AccountsReceivable.Models;
 using Server.Transactions.AccountsReceivable.Services;
 
@@ -22,6 +24,7 @@ public class InvoicesController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Policy = PolicyNames.RequireAdmin)]
     [HttpPost]
     public async Task<ActionResult<Invoice>> CreateInvoice([FromBody] CreateInvoiceRequest request, CancellationToken cancellationToken)
     {
