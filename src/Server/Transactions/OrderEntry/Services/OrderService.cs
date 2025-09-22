@@ -28,7 +28,7 @@ public class OrderService : IOrderService
             throw new DomainException("Orders must contain at least one line.");
         }
 
-        var order = new SalesOrder(Guid.NewGuid().ToString(), request.CustomerId, request.OrderDate, request.Lines);
+        var order = new SalesOrder(Guid.NewGuid().ToString(), request.CustomerId, request.OrderDate, request.Lines, "Pending");
 
         try
         {
