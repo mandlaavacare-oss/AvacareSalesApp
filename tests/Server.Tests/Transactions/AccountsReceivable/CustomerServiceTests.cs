@@ -5,6 +5,7 @@ using Server.Common.Exceptions;
 using Server.Transactions.AccountsReceivable.Adapters;
 using Server.Transactions.AccountsReceivable.Models;
 using Server.Transactions.AccountsReceivable.Services;
+using Server.Transactions.AccountsReceivable.Sdk;
 
 namespace Server.Tests.Transactions.AccountsReceivable;
 
@@ -54,5 +55,37 @@ public class CustomerServiceTests
         var act = async () => await service.GetCustomerAsync("100", CancellationToken.None);
 
         await act.Should().ThrowAsync<DomainException>();
+    }
+
+    [Fact]
+    public async Task GetCustomerAsync_WithSageAdapter_ReturnsMappedCustomer()
+    {
+        var client = new Mock<ISageAccountsReceivableClient>();
+        var logger = Mock.Of<ILogger<CustomerService>>();
+        client.Setup(c => c.GetCustomerAsync("100", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SageCustomer("100", "Acme", "info@acme.test", 1000m));
+
+        var adapter = new SageCustomerAdapter(client.Object);
+        var service = new CustomerService(adapter, logger);
+
+        var customer = await service.GetCustomerAsync("100", CancellationToken.None);
+
+        customer.Should().Be(new Customer("100", "Acme", "info@acme.test", 1000m));
+    }
+
+    [Fact]
+    public async Task GetCustomerAsync_WithSageAdapterWhenMissing_ThrowsNotFound()
+    {
+        var client = new Mock<ISageAccountsReceivableClient>();
+        var logger = Mock.Of<ILogger<CustomerService>>();
+        client.Setup(c => c.GetCustomerAsync("missing", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new SageEntityNotFoundException("Customer missing."));
+
+        var adapter = new SageCustomerAdapter(client.Object);
+        var service = new CustomerService(adapter, logger);
+
+        var act = async () => await service.GetCustomerAsync("missing", CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 }

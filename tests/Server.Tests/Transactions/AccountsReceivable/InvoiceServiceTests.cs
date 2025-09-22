@@ -5,6 +5,7 @@ using Server.Common.Exceptions;
 using Server.Transactions.AccountsReceivable.Adapters;
 using Server.Transactions.AccountsReceivable.Models;
 using Server.Transactions.AccountsReceivable.Services;
+using Server.Transactions.AccountsReceivable.Sdk;
 
 namespace Server.Tests.Transactions.AccountsReceivable;
 
@@ -48,5 +49,31 @@ public class InvoiceServiceTests
         var act = async () => await service.CreateInvoiceAsync(request, CancellationToken.None);
 
         await act.Should().ThrowAsync<DomainException>();
+    }
+
+    [Fact]
+    public async Task CreateInvoiceAsync_WithSageAdapter_MapsIdentifiers()
+    {
+        var client = new Mock<ISageAccountsReceivableClient>();
+        var logger = Mock.Of<ILogger<InvoiceService>>();
+        var request = new CreateInvoiceRequest("100", 150m, new DateTime(2024, 1, 1), "Open");
+        SageInvoiceDraft? capturedDraft = null;
+        client.Setup(c => c.CreateInvoiceAsync(It.IsAny<SageInvoiceDraft>(), It.IsAny<CancellationToken>()))
+            .Callback<SageInvoiceDraft, CancellationToken>((draft, _) => capturedDraft = draft)
+            .ReturnsAsync(new SageInvoice("INV-10", "100", 150m, request.IssuedOn, "Posted"));
+
+        var adapter = new SageInvoiceAdapter(client.Object);
+        var service = new InvoiceService(adapter, logger);
+
+        var invoice = await service.CreateInvoiceAsync(request, CancellationToken.None);
+
+        capturedDraft.Should().NotBeNull();
+        capturedDraft!.CustomerCode.Should().Be(request.CustomerId);
+        capturedDraft.Amount.Should().Be(request.Amount);
+        capturedDraft.IssuedOn.Should().Be(request.IssuedOn);
+        capturedDraft.Status.Should().Be(request.Status);
+        capturedDraft.ExternalReference.Should().NotBeNullOrWhiteSpace();
+
+        invoice.Should().Be(new Invoice("INV-10", "100", 150m, request.IssuedOn, "Posted"));
     }
 }
