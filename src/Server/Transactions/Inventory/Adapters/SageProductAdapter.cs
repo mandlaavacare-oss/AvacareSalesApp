@@ -1,4 +1,5 @@
 using Server.Transactions.Inventory.Models;
+using Server.Sage;
 
 namespace Server.Transactions.Inventory.Adapters;
 
@@ -6,6 +7,7 @@ public class SageProductAdapter : IProductAdapter
 {
     public Task<IReadOnlyCollection<Product>> GetProductsAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException("Integrate product retrieval with Sage SDK.");
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(SageSdkStub.GetProducts());
     }
 }

@@ -1,4 +1,5 @@
 using Server.Transactions.AccountsReceivable.Models;
+using Server.Sage;
 
 namespace Server.Transactions.AccountsReceivable.Adapters;
 
@@ -6,6 +7,9 @@ public class SageInvoiceAdapter : IInvoiceAdapter
 {
     public Task<Invoice> CreateInvoiceAsync(Invoice invoice, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException("Integrate invoice creation with Sage SDK.");
+        ArgumentNullException.ThrowIfNull(invoice);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return Task.FromResult(SageSdkStub.SaveInvoice(invoice));
     }
 }
