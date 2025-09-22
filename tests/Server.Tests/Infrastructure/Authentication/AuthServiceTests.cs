@@ -44,4 +44,23 @@ public class AuthServiceTests
 
         await act.Should().ThrowAsync<DomainException>();
     }
+
+    [Fact]
+    public async Task LoginAsync_WhenAdapterThrowsDomainException_RethrowsSameException()
+    {
+        var adapter = new Mock<IAuthAdapter>();
+        var logger = new Mock<ILogger<AuthService>>();
+        var request = new LoginRequest("user", "password");
+        var domainException = new DomainException("Invalid Sage username or password.");
+
+        adapter.Setup(a => a.LoginAsync(request, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(domainException);
+
+        var service = new AuthService(adapter.Object, logger.Object);
+
+        var act = async () => await service.LoginAsync(request, CancellationToken.None);
+
+        var thrown = await act.Should().ThrowAsync<DomainException>();
+        thrown.Which.Should().BeSameAs(domainException);
+    }
 }

@@ -27,6 +27,10 @@ public class AuthService : IAuthService
         {
             return await _authAdapter.LoginAsync(request, cancellationToken);
         }
+        catch (DomainException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to authenticate user {Username}", request.Username);
