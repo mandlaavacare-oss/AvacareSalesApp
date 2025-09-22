@@ -1,6 +1,72 @@
 @Server_HostAddress = http://localhost:5047
+@authToken = 
 
-GET {{Server_HostAddress}}/weatherforecast/
+### Login to retrieve a bearer token
+POST {{Server_HostAddress}}/auth/login
+Content-Type: application/json
 Accept: application/json
 
-###
+{
+  "username": "demo.user",
+  "password": "Pass@word1!"
+}
+
+> {% client.global.set("authToken", response.body.token); %}
+
+### Retrieve a single customer
+GET {{Server_HostAddress}}/customers/CUST-1001
+Accept: application/json
+Authorization: Bearer {{authToken}}
+
+### Retrieve available products
+GET {{Server_HostAddress}}/products
+Accept: application/json
+Authorization: Bearer {{authToken}}
+
+### Create a sales order
+POST {{Server_HostAddress}}/orders
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "customerId": "CUST-1001",
+  "orderDate": "2024-05-01T00:00:00Z",
+  "lines": [
+    {
+      "productId": "PROD-001",
+      "quantity": 5,
+      "unitPrice": 199.99
+    },
+    {
+      "productId": "PROD-002",
+      "quantity": 2,
+      "unitPrice": 89.50
+    }
+  ]
+}
+
+### Create an invoice
+POST {{Server_HostAddress}}/invoices
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "customerId": "CUST-1001",
+  "amount": 999.95,
+  "issuedOn": "2024-05-02T00:00:00Z",
+  "status": "Open"
+}
+
+### Apply a payment to an invoice
+POST {{Server_HostAddress}}/payments
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "invoiceId": "INV-90001",
+  "amount": 500.00,
+  "paidOn": "2024-05-05T00:00:00Z"
+}
