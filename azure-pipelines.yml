@@ -92,8 +92,8 @@ stages:
               containerRegistry: 'acr-service-connection'
               repository: '$(backendRepository)'
               command: 'buildAndPush'
-              Dockerfile: 'src/Server/Dockerfile'
-              buildContext: 'src/Server'
+              Dockerfile: 'Dockerfile.api'
+              buildContext: '.'
               tags: |
                 $(Build.BuildNumber)
                 latest
@@ -104,8 +104,8 @@ stages:
               containerRegistry: 'acr-service-connection'
               repository: '$(frontendRepository)'
               command: 'buildAndPush'
-              Dockerfile: 'web/Dockerfile'
-              buildContext: 'web'
+              Dockerfile: 'Dockerfile.web'
+              buildContext: '.'
               tags: |
                 $(Build.BuildNumber)
                 latest
