@@ -24,6 +24,65 @@ The repository now includes an ASP.NET Core Web API that provides authenticated 
 
 - .NET SDK 8.0 or later
 
+### Database setup
+
+Follow these steps before running the API so the ASP.NET Identity schema has a database to target.
+
+1. **Provision SQL Server**
+   - **Local container** – run a disposable SQL Server instance in Docker:
+
+     ```bash
+     docker run -e 'ACCEPT_EULA=Y' -e 'MSSQL_SA_PASSWORD=ChangeM3Now!' \
+       -p 1433:1433 --name avacare-sql -d mcr.microsoft.com/mssql/server:2022-latest
+     ```
+
+     The container listens on `localhost,1433`. Replace the password before using the instance for more than quick local tests.
+   - **Remote SQL Server / Azure SQL** – provision an environment-specific database server (for example through Azure Portal → SQL databases, or via your infrastructure-as-code templates). Ensure the firewall allows your development machine or CI agent to connect.
+
+2. **Create the `AvacareSalesApp` database and login** (run against the chosen server with `sqlcmd`, Azure Data Studio, or SSMS):
+
+   ```sql
+   CREATE DATABASE AvacareSalesApp;
+   GO
+
+   CREATE LOGIN AvacareSalesAppUser WITH PASSWORD = 'Use_A_Strong_Password_1!';
+   GO
+
+   USE AvacareSalesApp;
+   CREATE USER AvacareSalesAppUser FOR LOGIN AvacareSalesAppUser;
+   ALTER ROLE db_owner ADD MEMBER AvacareSalesAppUser;
+   GO
+   ```
+
+   Adjust the password policy to match your organisation's standards. For managed platforms such as Azure SQL Database, create the contained user with `CREATE USER ... WITH PASSWORD = ...` instead of `CREATE LOGIN`.
+
+3. **Store the connection string securely**. Do not edit `src/Server/appsettings.Development.json`; it intentionally leaves `ConnectionStrings:Default` blank. Instead either:
+   - Use [ASP.NET Core user secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets) from the `src/Server` directory:
+
+     ```bash
+     dotnet user-secrets init
+     dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost,1433;Database=AvacareSalesApp;User Id=AvacareSalesAppUser;Password=<StrongPassword>;TrustServerCertificate=True"
+     ```
+
+   - Or export the environment variable so CLI tools and the API use it:
+
+     ```bash
+     export ConnectionStrings__Default="Server=sql.example.com,1433;Database=AvacareSalesApp;User Id=AvacareSalesAppUser;Password=<StrongPassword>;Encrypt=True;TrustServerCertificate=False"
+     ```
+
+   Production deployments should rely on platform secret stores (Azure App Settings, Key Vault, Kubernetes secrets, etc.) to inject the same `ConnectionStrings__Default` value.
+
+4. **Apply the Identity schema**. Install the Entity Framework CLI if you have not already (`dotnet tool install --global dotnet-ef`) and then run the migration from the repository root:
+
+   ```bash
+   dotnet ef database update \
+     --project src/Server/Server.csproj \
+     --startup-project src/Server/Server.csproj \
+     --context Server.Infrastructure.Authentication.Database.ApplicationDbContext
+   ```
+
+   The command uses the configured connection string to create the ASP.NET Identity tables inside the `AvacareSalesApp` database. Re-run it whenever new migrations are added.
+
 ### Project layout
 
 ```
