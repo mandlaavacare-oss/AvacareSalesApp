@@ -27,6 +27,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 
 builder.Services.AddAuthorization();
 
+builder.Services.Configure<SageSessionOptions>(builder.Configuration.GetSection("Sage:Session"));
+builder.Services.AddScoped<ISageSessionFactory, EfSageSessionFactory>();
 builder.Services.AddScoped<IDatabaseContext, DatabaseContext>();
 
 builder.Services.AddScoped<IAuthAdapter, SageAuthAdapter>();
